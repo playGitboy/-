@@ -1,0 +1,87 @@
+import win.ui;
+import win.clip;
+import string;
+/*DSG{{*/
+mainForm = win.form(text="滞纳金计算器 v0.2";right=215;bottom=215;border="dialog frame";max=false;min=false;)
+mainForm.add(
+dtEnd={cls="datetimepick";left=80;top=56;right=192;bottom=80;edge=1;z=2;};
+dtStart={cls="datetimepick";left=80;top=24;right=192;bottom=48;edge=1;z=1;};
+edFee={cls="edit";left=80;top=120;right=192;bottom=144;edge=1;z=9;};
+edTax={cls="edit";left=80;top=88;right=192;bottom=112;edge=1;z=5;};
+static={cls="static";text="税款本金";left=16;top=88;right=72;bottom=112;center=1;transparent=1;z=6;};
+static2={cls="static";text="开始日期";left=16;top=24;right=72;bottom=48;center=1;transparent=1;z=3;};
+static3={cls="static";text="结束日期";left=16;top=56;right=72;bottom=80;center=1;transparent=1;z=4;};
+static4={cls="static";text="滞 纳 金";left=16;top=120;right=72;bottom=144;center=1;transparent=1;z=10;};
+反推={cls="button";text="反推";left=120;top=160;right=176;bottom=192;z=8;};
+计算={cls="button";text="计算";left=48;top=160;right=104;bottom=192;z=7;};
+
+)
+/*}}*/
+
+mainForm.dtStart.setFormat("yyyy-MM-dd")
+mainForm.dtEnd.setFormat("yyyy-MM-dd")
+
+function toNumber(szNumber){
+	if (type(szNumber)=="string"){
+		szNumber = string.replace(szNumber,"[, ]","")
+	}
+	return szNumber?tonumber(szNumber):0;
+}
+
+mainForm.计算.oncommand = function(id,event){
+	iTax = mainForm.edTax.text?toNumber(mainForm.edTax.text):0
+	mainForm.edFee.text = ..math.round(mainForm.dtEnd.time.diffday(mainForm.dtStart.time)*0.0005*iTax,2)
+}
+
+mainForm.反推.oncommand = function(id,event){
+	iTax = mainForm.edTax.text?toNumber(mainForm.edTax.text):0
+	iFee = mainForm.edFee.text?toNumber(mainForm.edFee.text):0
+	mainForm.dtEnd.time = mainForm.dtStart.time.addday(iFee/(0.0005*iTax))
+}
+
+// 设置编辑框仅支持数字、逗号、小数点和Ctrl+V
+setEditMode = function (edit, mode = "number") {
+    if (mode == "number") {
+        edit.wndproc = function(hwnd,message,wParam,lParam){
+    		if (message == 0x102/*_WM_CHAR*/) {
+        		if (wParam >= '0'# && wParam <= '9'#) {
+            		return;
+        		}
+        		select wParam {
+            		case '-'# {
+                		if (#edit.text == 0)
+                    		return;
+            		}
+            		case ','# {
+                		if (#edit.text != 0)
+                    		return;
+            		}
+            		case '.'# {
+                		if (!..string.match(edit.text, "\."))
+                    		return;
+            		}
+            		case 0x8/*_VK_BACK*/, 0xD/*_VK_RETURN*/, 0x2E/*_VK_DELETE*/ {
+                		return;
+            		}
+        		}
+        		return 1;
+    		}
+		}
+		edit.translateAccelerator = function(msg){
+			var ctrl = ::GetKeyState(0x11/*_VK_CTRL*/) & 0x8000;
+    		var vk = msg.wParam;
+    		if((vk == 'V'# ) && ctrl){
+        		if(msg.message == 0x100/*_WM_KEYDOWN*/){
+        			owner.text = win.clip.read();
+        			return true;
+        		}
+    		}
+		}
+    }
+}
+
+setEditMode(mainForm.edTax)
+setEditMode(mainForm.edFee)
+
+mainForm.show();
+return win.loopMessage();
